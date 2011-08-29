@@ -4,10 +4,12 @@
          tests/eli-tester
          (planet jaymccarthy/dijkstra))
 
-; an undirected graph structure
+; a graph consists of:
+; nodes#      = number
+; adjacencies = (hash ((number . list) ...))
 (struct graph (nodes# adjacencies) #:transparent)
 
-; Load a graph structure from file.
+; Load an *undirected* graph structure from file.
 ; The first line is the number of nodes in the graph.
 ; The next lines are pair of numbers representing one symmetric edge.
 ;
