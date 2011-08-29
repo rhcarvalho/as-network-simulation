@@ -1,7 +1,8 @@
 #lang racket/base
 (require racket/match
          racket/port
-         tests/eli-tester)
+         tests/eli-tester
+         (planet jaymccarthy/dijkstra))
 
 ; an undirected graph structure
 (struct graph (nodes# adjacencies) #:transparent)
@@ -36,8 +37,25 @@
   0)
 
 
-(call-with-input-file "small_graph.txt"
-  (λ (in) (load-graph in)))
+(define small-graph
+  (call-with-input-file "small_graph.txt"
+    (λ (in) (load-graph in))))
+
+(define (graph-shortest-path g src [stop? (lambda (node) #f)])
+  (shortest-path (lambda (node) (hash-ref (graph-adjacencies g) node '()))
+                 (lambda (edge) 1)
+                 (lambda (edge) edge)
+                 src
+                 stop?))
+
+(define-values (dist1 prev1)
+  (graph-shortest-path small-graph 1))
+
+small-graph
+dist1
+prev1
+
+(shortest-path-to prev1 5)
 
 (let* ([nodes# 5]
        [edges '((1 . 2)
