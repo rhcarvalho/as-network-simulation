@@ -16,7 +16,7 @@
 
 ; (listOf cons) -> (hash ((number . list) ...))
 (define (edges->adjacencies edges)
-  (let ([adjacencies (make-hash)])
+  (let ([adjacencies (make-hasheq)])
     (for ([edge (in-list edges)])
       (match edge
         [(cons node-from node-to)
@@ -42,9 +42,9 @@
 (let* ([nodes# 5]
        [edges '((1 . 2)
                 (1 . 3))]
-       [adjacencies (make-hash '((1 . (3 2))
-                                 (2 . (1))
-                                 (3 . (1))))]
+       [adjacencies (make-hasheq '((1 . (3 2))
+                                   (2 . (1))
+                                   (3 . (1))))]
        [test-graph (graph nodes# adjacencies)])
   (test
    (edges->adjacencies edges) => adjacencies
