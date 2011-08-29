@@ -59,24 +59,27 @@ prev1
 
 (shortest-path-to prev1 5)
 
-(let* ([nodes# 5]
-       [edges '((1 . 2)
-                (1 . 3))]
-       [adjacencies (make-hasheq '((1 . (3 2))
-                                   (2 . (1))
-                                   (3 . (1))))]
-       [test-graph (graph nodes# adjacencies)])
-  (test
-   (edges->adjacencies edges) => adjacencies
-   
-   (call-with-input-bytes #"1 2\n1 3"
-     (λ (in) (load-edges in)))
-   =>
-   edges
-   
-   (call-with-input-bytes #"5\n1 2\n1 3"
-     (λ (in) (load-graph in)))
-   =>
-   test-graph
-   
-   (connected-components# test-graph) => 1))
+(define (all-tests)
+  (let* ([nodes# 5]
+         [edges '((1 . 2)
+                  (1 . 3))]
+         [adjacencies (make-hasheq '((1 . (3 2))
+                                     (2 . (1))
+                                     (3 . (1))))]
+         [test-graph (graph nodes# adjacencies)])
+    (test
+     (edges->adjacencies edges) => adjacencies
+     
+     (call-with-input-bytes #"1 2\n1 3"
+       (λ (in) (load-edges in)))
+     =>
+     edges
+     
+     (call-with-input-bytes #"5\n1 2\n1 3"
+       (λ (in) (load-graph in)))
+     =>
+     test-graph
+     
+     (connected-components# test-graph) => 1)))
+
+(all-tests)
