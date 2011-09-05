@@ -69,6 +69,14 @@
       (set-union visited (connected-component g node))))])
     components))
 
+;------------------------------------------------------------
+
+(define (detach-node g node)
+  (graph (graph-nodes# g)
+         (for/hasheq ([(k v) (in-hash (graph-adjacencies g))]
+                      #:unless (= k node))
+           (values k (remq node v)))))
+
 
 ;------------------------------------------------------------
 ; Computations
@@ -121,6 +129,17 @@ prev1
      =>
      test-graph
      
-     (connected-components# test-graph) => 3)))
+     (connected-components# test-graph) => 3))
+  (node-removal-tests))
+
+(define (node-removal-tests)
+  (let ([g-before (graph 3 (make-hasheq '((1 . (3 2))
+                                          (2 . (1))
+                                          (3 . (1)))))]
+        [g-after (graph 3 (make-hasheq '((1 . (3))
+                                         (3 . (1)))))])
+   (test
+    ; failing test because for/hash gives an immutable-hash
+    (detach-node g-before 2) => g-after)))
 
 (all-tests)
