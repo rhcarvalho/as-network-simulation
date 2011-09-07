@@ -30,8 +30,14 @@
       (match edge
         [(cons node-from node-to)
          (begin
-           (hash-update! adjacencies node-from (λ (node-list) (cons node-to node-list)) '())
-           (hash-update! adjacencies node-to (λ (node-list) (cons node-from node-list)) '()))]))
+           ; add node-to to node-from's adjacency list
+           (hash-update! adjacencies node-from
+                         (λ (node-list)
+                           (cons node-to node-list)) '())
+           ; add node-from to node-to's adjacency list
+           (hash-update! adjacencies node-to
+                         (λ (node-list)
+                           (cons node-from node-list)) '()))]))
     adjacencies))
 
 ; input-port -> (listOf pair)
@@ -57,6 +63,8 @@
     (graph-shortest-path g node))
   (list->set (hash-keys dist)))
 
+; Very slow and inneficient implementation
+;
 ; graph -> number
 (define (connected-components# g)
   (let-values ([(components _)
@@ -73,9 +81,10 @@
 
 (define (detach-node g node)
   (graph (graph-nodes# g)
-         (for/hasheq ([(k v) (in-hash (graph-adjacencies g))]
-                      #:unless (= k node))
-           (values k (remq node v)))))
+         (hash-copy
+          (for/hasheq ([(k v) (in-hash (graph-adjacencies g))]
+                       #:unless (= k node))
+            (values k (remq node v))))))
 
 
 ;------------------------------------------------------------
@@ -139,7 +148,6 @@ prev1
         [g-after (graph 3 (make-hasheq '((1 . (3))
                                          (3 . (1)))))])
    (test
-    ; failing test because for/hash gives an immutable-hash
     (detach-node g-before 2) => g-after)))
 
 (all-tests)
