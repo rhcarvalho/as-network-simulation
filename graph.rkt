@@ -87,17 +87,7 @@
 
 ;------------------------------------------------------------
 
-(define (detach-node! g node)
-  (let ([adjacencies (graph-adjacencies g)])
-    (hash-remove! adjacencies node)
-    (for ([(n adj-lst) (in-hash adjacencies)])
-      (hash-set! adjacencies n (remq node adj-lst)))))
-
 (define (detach-nodes! g nodes)
-  (for ([node (in-list nodes)])
-    (detach-node! g node)))
-
-(define (detach-nodes-fast! g nodes)
   (let ([adjacencies (graph-adjacencies g)])
     (for ([node (in-list nodes)])
       (hash-remove! adjacencies node))
@@ -153,11 +143,8 @@ prev1
                 (real->decimal-string
                  (%-of-nodes/largest-component components nodes#)))))))
 
-`(time
+(time
   (process-graph as-graph))
-
-(time (detach-nodes!      as-graph  (build-list 1000 values)))
-(time (detach-nodes-fast! as-graph2 (build-list 1000 values)))
 
 ;------------------------------------------------------------
 ; Tests
@@ -193,7 +180,7 @@ prev1
                                           (3 . (1)))))]
         [g-after (graph 3 (make-hasheq '((1 . (3))
                                          (3 . (1)))))])
-    (detach-node! g-before 2)
+    (detach-nodes! g-before '(2))
     (test
      (equal? g-before g-after))))
 
