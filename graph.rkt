@@ -61,21 +61,26 @@
 (define (connected-component g node)
   (define-values (dist _)
     (graph-shortest-path g node))
-  (list->set (hash-keys dist)))
+  (list->seteq (hash-keys dist)))
 
 ; Very slow and inneficient implementation
 ;
 ; graph -> number
+(define (connected-components g)
+  (define-values (components _)
+    (for/fold ([components '()]
+               [visited (seteq)])
+      ([node (in-range 1 (add1 (graph-nodes# g)))]
+       #:when (not (set-member? visited node)))
+      (let ([component (connected-component g node)])
+        (values
+         (cons component components)
+         (set-union visited component)))))
+  components)
+
+; graph -> number
 (define (connected-components# g)
-  (let-values ([(components _)
-                (for/fold ([components 0]
-                           [visited (set)])
-                  ([node (in-range 1 (add1 (graph-nodes# g)))]
-                   #:when (not (set-member? visited node)))
-                  (values
-                   (add1 components)
-                   (set-union visited (connected-component g node))))])
-    components))
+  (length (connected-components g)))
 
 ;------------------------------------------------------------
 
