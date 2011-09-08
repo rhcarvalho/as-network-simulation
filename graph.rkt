@@ -68,13 +68,13 @@
 ; graph -> number
 (define (connected-components# g)
   (let-values ([(components _)
-   (for/fold ([components 0]
-              [visited (set)])
-             ([node (in-range 1 (add1 (graph-nodes# g)))]
-              #:when (not (set-member? visited node)))
-     (values
-      (add1 components)
-      (set-union visited (connected-component g node))))])
+                (for/fold ([components 0]
+                           [visited (set)])
+                  ([node (in-range 1 (add1 (graph-nodes# g)))]
+                   #:when (not (set-member? visited node)))
+                  (values
+                   (add1 components)
+                   (set-union visited (connected-component g node))))])
     components))
 
 ;------------------------------------------------------------
@@ -85,6 +85,12 @@
           (for/hasheq ([(k v) (in-hash (graph-adjacencies g))]
                        #:unless (= k node))
             (values k (remq node v))))))
+
+(define (detach-node! g node)
+  (let ([adjacencies (graph-adjacencies g)])
+    (hash-remove! adjacencies node)
+    (for ([(n adj-lst) (in-hash adjacencies)])
+      (hash-set! adjacencies n (remq node adj-lst)))))
 
 
 ;------------------------------------------------------------
@@ -110,8 +116,17 @@ prev1
   (call-with-input-file "as_graph.txt"
     (λ (in) (load-graph in))))
 
-(connected-components# as-graph)
+(time (connected-components# as-graph))
 
+(time (connected-components# (detach-node as-graph 1)))
+
+(printf "t:~n")
+(time (and (detach-node as-graph 1) #f))
+(printf "t!:~n")
+(time (detach-node! as-graph 1))
+
+
+(time (connected-components# as-graph))
 
 ;------------------------------------------------------------
 ; Tests
@@ -147,7 +162,8 @@ prev1
                                           (3 . (1)))))]
         [g-after (graph 3 (make-hasheq '((1 . (3))
                                          (3 . (1)))))])
-   (test
-    (detach-node g-before 2) => g-after)))
+    (detach-node! g-before 2)
+    (test
+     (equal? g-before g-after))))
 
 (all-tests)
