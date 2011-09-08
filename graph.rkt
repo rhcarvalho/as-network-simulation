@@ -79,13 +79,6 @@
 
 ;------------------------------------------------------------
 
-(define (detach-node g node)
-  (graph (graph-nodes# g)
-         (hash-copy
-          (for/hasheq ([(k v) (in-hash (graph-adjacencies g))]
-                       #:unless (= k node))
-            (values k (remq node v))))))
-
 (define (detach-node! g node)
   (let ([adjacencies (graph-adjacencies g)])
     (hash-remove! adjacencies node)
@@ -118,14 +111,7 @@ prev1
 
 (time (connected-components# as-graph))
 
-(time (connected-components# (detach-node as-graph 1)))
-
-(printf "t:~n")
-(time (and (detach-node as-graph 1) #f))
-(printf "t!:~n")
-(time (detach-node! as-graph 1))
-
-
+(detach-node! as-graph 1)
 (time (connected-components# as-graph))
 
 ;------------------------------------------------------------
