@@ -85,6 +85,10 @@
     (for ([(n adj-lst) (in-hash adjacencies)])
       (hash-set! adjacencies n (remq node adj-lst)))))
 
+(define (detach-nodes! g nodes)
+  (for ([node (in-list nodes)])
+    (detach-node! g node)))
+
 
 ;------------------------------------------------------------
 ; Computations
@@ -109,10 +113,13 @@ prev1
   (call-with-input-file "as_graph.txt"
     (λ (in) (load-graph in))))
 
-(time (connected-components# as-graph))
-
-(detach-node! as-graph 1)
-(time (connected-components# as-graph))
+(time
+ (let ([nodes# (graph-nodes# as-graph)])
+   (printf "The AS graph has ~a nodes.~n" nodes#)
+   (printf "% nodes removed / # connected components~n")
+   (for ([i (in-range 10)])
+     (detach-nodes! as-graph (for/list ([_ (in-range 10)]) (random (truncate (/ nodes# 100)))))
+     (printf "~a\t\t  ~a~n" (add1 i) (connected-components# as-graph)))))
 
 ;------------------------------------------------------------
 ; Tests
