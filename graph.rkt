@@ -98,7 +98,7 @@
 ;------------------------------------------------------------
 ; Computations
 ;------------------------------------------------------------
-
+#|
 (define small-graph
   (call-with-input-file "small_graph.txt"
     (λ (in) (load-graph in))))
@@ -112,7 +112,7 @@ prev1
 (shortest-path-to prev1 5)
 (connected-component small-graph 10)
 (connected-component small-graph 1)
-
+|#
 
 (define as-graph
   (call-with-input-file "as_graph.txt"
