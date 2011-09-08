@@ -1,5 +1,6 @@
 #lang racket/base
-(require racket/match
+(require racket/list
+         racket/match
          racket/port
          racket/set
          tests/eli-tester
@@ -65,7 +66,7 @@
 
 ; Very slow and inneficient implementation
 ;
-; graph -> number
+; graph -> (listOf seteq)
 (define (connected-components g)
   (define-values (components _)
     (for/fold ([components '()]
@@ -78,9 +79,11 @@
          (set-union visited component)))))
   components)
 
-; graph -> number
-(define (connected-components# g)
-  (length (connected-components g)))
+; (listOf seteq) number -> number
+(define (%-of-nodes/largest-component components nodes#)
+  (* 100.0
+     (/ (set-count (argmax set-count components))
+        nodes#)))
 
 ;------------------------------------------------------------
 
@@ -123,15 +126,23 @@ prev1
   (call-with-input-file "as_graph.txt"
     (λ (in) (load-graph in))))
 
+(define (process-graph g)
+  (let* ([nodes# (graph-nodes# g)]
+         [1%*nodes (truncate (/ nodes# 100))])
+    (printf "The graph has ~a nodes.~n" nodes#)
+    (printf "% nodes detached / # connected components / % nodes in the largest component~n")
+    (printf "0\t\t   ~a\t\t\t    100~n" 1 #|(connected-components# as-graph)|#)
+    (for ([i (in-range 10)])
+      (detach-random-nodes! g 1%*nodes)
+      (let ([components (connected-components g)])
+        (printf "~a\t\t   ~a\t\t\t    ~a~n"
+                (add1 i)
+                (length components)
+                (real->decimal-string
+                 (%-of-nodes/largest-component components nodes#)))))))
+
 (time
- (let* ([nodes# (graph-nodes# as-graph)]
-        [1%*nodes (truncate (/ nodes# 100))])
-   (printf "The AS graph has ~a nodes.~n" nodes#)
-   (printf "% nodes removed / # connected components~n")
-   (printf "0\t\t  ~a~n" 1 #|(connected-components# as-graph)|#)
-   (for ([i (in-range 10)])
-     (detach-random-nodes! as-graph 1%*nodes)
-     (printf "~a\t\t  ~a~n" (add1 i) (connected-components# as-graph)))))
+  (process-graph as-graph))
 
 ;------------------------------------------------------------
 ; Tests
@@ -158,7 +169,7 @@ prev1
      =>
      test-graph
      
-     (connected-components# test-graph) => 3))
+     (length (connected-components test-graph)) => 3))
   (node-removal-tests))
 
 (define (node-removal-tests)
