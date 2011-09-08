@@ -97,6 +97,14 @@
   (for ([node (in-list nodes)])
     (detach-node! g node)))
 
+(define (detach-nodes-fast! g nodes)
+  (let ([adjacencies (graph-adjacencies g)])
+    (for ([node (in-list nodes)])
+      (hash-remove! adjacencies node))
+    (for* ([node (in-list nodes)]
+           [(n adj-lst) (in-hash adjacencies)])
+      (hash-set! adjacencies n (remq node adj-lst)))))
+
 (define (detach-random-nodes! g amount)
   (let ([nodes# (graph-nodes# g)])
     (detach-nodes! g (for/list ([_ (in-range amount)])
@@ -126,6 +134,10 @@ prev1
   (call-with-input-file "as_graph.txt"
     (λ (in) (load-graph in))))
 
+(define as-graph2
+  (call-with-input-file "as_graph.txt"
+    (λ (in) (load-graph in))))
+
 (define (process-graph g)
   (let* ([nodes# (graph-nodes# g)]
          [1%*nodes (truncate (/ nodes# 100))])
@@ -141,8 +153,11 @@ prev1
                 (real->decimal-string
                  (%-of-nodes/largest-component components nodes#)))))))
 
-(time
+`(time
   (process-graph as-graph))
+
+(time (detach-nodes!      as-graph  (build-list 1000 values)))
+(time (detach-nodes-fast! as-graph2 (build-list 1000 values)))
 
 ;------------------------------------------------------------
 ; Tests
