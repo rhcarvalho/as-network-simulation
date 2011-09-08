@@ -89,6 +89,11 @@
   (for ([node (in-list nodes)])
     (detach-node! g node)))
 
+(define (detach-random-nodes! g amount)
+  (let ([nodes# (graph-nodes# g)])
+    (detach-nodes! g (for/list ([_ (in-range amount)])
+                       ; random number in range [1; nodes#]
+                       (add1 (random nodes#))))))
 
 ;------------------------------------------------------------
 ; Computations
@@ -114,11 +119,13 @@ prev1
     (λ (in) (load-graph in))))
 
 (time
- (let ([nodes# (graph-nodes# as-graph)])
+ (let* ([nodes# (graph-nodes# as-graph)]
+        [1%*nodes (truncate (/ nodes# 100))])
    (printf "The AS graph has ~a nodes.~n" nodes#)
    (printf "% nodes removed / # connected components~n")
+   (printf "0\t\t  ~a~n" 1 #|(connected-components# as-graph)|#)
    (for ([i (in-range 10)])
-     (detach-nodes! as-graph (for/list ([_ (in-range 10)]) (random (truncate (/ nodes# 100)))))
+     (detach-random-nodes! as-graph 1%*nodes)
      (printf "~a\t\t  ~a~n" (add1 i) (connected-components# as-graph)))))
 
 ;------------------------------------------------------------
