@@ -3,6 +3,7 @@
          racket/match
          racket/port
          racket/set
+;         data/queue             ;; for BFS implementation
          tests/eli-tester
          (planet jaymccarthy/dijkstra))
 
@@ -79,6 +80,34 @@
          (set-union visited component)))))
   components)
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (connected-component/fast g node)
+  'bfs)
+
+; This was intended to be faster than `connected-components'
+; but it's not really better.
+; I must consider first implementing `connected-component/fast'
+; using BFS, then check again how it performs...
+;
+; graph -> (listOf seteq)
+(define (connected-components/2 g)
+  (let ([nodes# (graph-nodes# g)])
+    (let loop ([unvisited (list->seteq (build-list nodes# add1))]
+               [components '()])
+      (if (set-empty? unvisited)
+          components
+          (let* ([chosen (set-item unvisited)]
+                 [component (connected-component g chosen)])
+            (loop (set-subtract unvisited component)
+                  (cons component components)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+
+
 ; (listOf seteq) number -> number
 (define (%-of-nodes/largest-component components nodes#)
   (* 100.0
@@ -100,6 +129,17 @@
     (detach-nodes! g (for/list ([_ (in-range amount)])
                        ; random number in range [1; nodes#]
                        (add1 (random nodes#))))))
+
+
+;------------------------------------------------------------
+; Helpers
+;------------------------------------------------------------
+
+; return one arbitrary item of the set
+;
+; set -> any/c
+(define (set-item s)
+  (for/first ([item (in-set s)]) item))
 
 ;------------------------------------------------------------
 ; Computations
@@ -145,6 +185,10 @@ prev1
 
 (time
   (process-graph as-graph))
+
+;; Compare these two after `connected-component/fast' is implemented
+;(time (length (connected-components as-graph)))
+;(time (length (connected-components/2 as-graph)))
 
 ;------------------------------------------------------------
 ; Tests
