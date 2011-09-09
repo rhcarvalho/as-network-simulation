@@ -1,15 +1,6 @@
 #lang racket
 (define N 15385)
 
-(define-syntax-rule (report-memory expr ...)
-  (let ([cust (make-custodian)])
-    (parameterize ([current-custodian cust])
-      (define r (begin expr ...))
-      (collect-garbage)
-      (displayln (current-memory-use cust))
-      r)))
-
-
 ; input-port -> (listOf pair)
 (define (load-edges port)
   (for/list ([node-from (in-producer read eof port)]
@@ -35,17 +26,15 @@
 ;-----------------------------------------------------------------------
 
 (define adj/old
-  (report-memory
-   (call-with-input-file "as_graph.txt"
-     (λ (in)
-       (read in)
-       (edges->adjacencies (load-edges in))))))
+  (call-with-input-file "as_graph.txt"
+    (λ (in)
+      (read in)
+      (edges->adjacencies (load-edges in)))))
 
 (define adj/new (hash-copy adj/old))
-(report-memory
- (for ([(k v) (in-hash adj/new)])
-   (hash-set! adj/new k (make-hasheq (for/list ([i (in-list v)])
-                                       (cons i #t))))))
+(for ([(k v) (in-hash adj/new)])
+  (hash-set! adj/new k (make-hasheq (for/list ([i (in-list v)])
+                                      (cons i #t)))))
 
 (define adj/new2 (hash-copy adj/new))
 
