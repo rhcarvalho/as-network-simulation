@@ -34,13 +34,9 @@
 (define adj/new (hash-copy adj/old))
 (for ([(k v) (in-hash adj/new)])
   (hash-set! adj/new k (make-hasheq (for/list ([i (in-list v)])
-                                      (cons i #t)))))
+                                      (cons i null)))))
 
-(define adj/new2 (hash-copy adj/new))
-
-(define adj/new3 (hash-copy adj/new))
-(for ([(k v) (in-hash adj/new3)])
-  (hash-set! adj/new3 k (list->seteq (hash-keys v))))
+(define adj/new-alt (hash-copy adj/new))
 ;-----------------------------------------------------------------------
 
 (define (detach-nodes!/old adjacencies nodes)
@@ -57,19 +53,11 @@
          [(n adj-hsh) (in-hash adjacencies)])
     (hash-remove! adj-hsh node)))
 
-(define (detach-nodes!/new2 adjacencies nodes)
+(define (detach-nodes!/new-alt adjacencies nodes)
   (for ([node (in-list nodes)])
-    (hash-remove! adjacencies node))
-  (for* ([node (in-list nodes)]
-         [(n adj-hsh) (in-hash adjacencies)])
-    (hash-set! adj-hsh node #f)))
-
-(define (detach-nodes!/new3 adjacencies nodes)
-  (for ([node (in-list nodes)])
-    (hash-remove! adjacencies node))
-  (for* ([node (in-list nodes)]
-         [(n adj-set) (in-hash adjacencies)])
-    (hash-set! adjacencies n (set-remove adj-set node))))
+    (hash-remove! adjacencies node)
+    (for ([(n adj-hsh) (in-hash adjacencies)])
+      (hash-remove! adj-hsh node))))
 
 (define (detach-random-nodes! detach-nodes! adjacencies amount)
   (detach-nodes! adjacencies (for/list ([_ (in-range amount)])
@@ -77,8 +65,6 @@
                                (random N))))
 ;-----------------------------------------------------------------------
 
-(time (detach-random-nodes! detach-nodes!/old  adj/old  100))
-(time (detach-random-nodes! detach-nodes!/new  adj/new  100))
-(time (detach-random-nodes! detach-nodes!/new2 adj/new2 100))
-(time (detach-random-nodes! detach-nodes!/new3 adj/new3 100))
-
+;(time (detach-random-nodes! detach-nodes!/old      adj/old      1000))
+(time (detach-random-nodes! detach-nodes!/new      adj/new      1000))
+(time (detach-random-nodes! detach-nodes!/new-alt  adj/new-alt  1000))
