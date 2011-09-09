@@ -59,12 +59,15 @@
     (for ([(n adj-hsh) (in-hash adjacencies)])
       (hash-remove! adj-hsh node))))
 
-(define (detach-random-nodes! detach-nodes! adjacencies amount)
-  (detach-nodes! adjacencies (for/list ([_ (in-range amount)])
-                               ; random number in range [0; N-1]
-                               (random N))))
+(define (random-nodes amount)
+  (for/list ([_ (in-range amount)])
+    ; random number in range [0; N-1]
+    (random N)))
 ;-----------------------------------------------------------------------
-
-;(time (detach-random-nodes! detach-nodes!/old      adj/old      1000))
-(time (detach-random-nodes! detach-nodes!/new      adj/new      1000))
-(time (detach-random-nodes! detach-nodes!/new-alt  adj/new-alt  1000))
+(let ([detach-list/1 (random-nodes 3200)]
+      [detach-list/2 (random-nodes 3200)])
+  ;(time (detach-nodes!/old     adj/old     nodes-to-be-detached))
+  (time (detach-nodes!/new     adj/new     detach-list/1))
+  (time (detach-nodes!/new-alt adj/new-alt detach-list/1))
+  (time (detach-nodes!/new     adj/new     detach-list/2))
+  (time (detach-nodes!/new-alt adj/new-alt detach-list/2)))
