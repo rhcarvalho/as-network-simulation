@@ -13,7 +13,7 @@
 
 ; a graph consists of:
 ; nodes#      = number
-; adjacencies = (hash ((number . list) ...))
+; adjacencies = (hasheq ((number . hasheq) ...))
 (struct graph (nodes# adjacencies) #:transparent)
 
 ; Load an *undirected* graph structure from file.
@@ -32,7 +32,7 @@
     (define (add-adjacency from to)
       (hash-update! adjacencies from
                     (λ (node-hash)
-                      (hash-set! node-hash to #f)
+                      (hash-set! node-hash to null)
                       node-hash) (make-hasheq)))
     (for ([edge (in-list edges)])
       (match edge
@@ -201,10 +201,10 @@ prev1
          [edges '((1 . 2)
                   (1 . 3))]
          [adjacencies (make-hasheq
-                       `((1 . ,(make-hasheq '((3 . #f)
-                                              (2 . #f))))
-                         (2 . ,(make-hasheq '((1 . #f))))
-                         (3 . ,(make-hasheq '((1 . #f))))))]
+                       `((1 . ,(make-hasheq `((3 . ,null)
+                                              (2 . ,null))))
+                         (2 . ,(make-hasheq `((1 . ,null))))
+                         (3 . ,(make-hasheq `((1 . ,null))))))]
          [test-graph (graph nodes# adjacencies)])
     (test
      (edges->adjacencies edges) => adjacencies
@@ -224,13 +224,13 @@ prev1
 
 (define (node-removal-tests)
   (let ([g-before (graph 3 (make-hasheq
-                            `((1 . ,(make-hasheq '((3 . #f)
-                                                   (2 . #f))))
-                              (2 . ,(make-hasheq '((1 . #f))))
-                              (3 . ,(make-hasheq '((1 . #f)))))))]
+                            `((1 . ,(make-hasheq `((3 . ,null)
+                                                   (2 . ,null))))
+                              (2 . ,(make-hasheq `((1 . ,null))))
+                              (3 . ,(make-hasheq `((1 . ,null)))))))]
         [g-after (graph 3 (make-hasheq
-                           `((1 . ,(make-hasheq '((3 . #f))))
-                             (3 . ,(make-hasheq '((1 . #f)))))))])
+                           `((1 . ,(make-hasheq `((3 . ,null))))
+                             (3 . ,(make-hasheq `((1 . ,null)))))))])
     (detach-nodes! g-before '(2))
     (test
      (equal? g-before g-after))))
