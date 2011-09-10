@@ -31,8 +31,9 @@
     ; add node-to to node-from's adjacency list
     (define (add-adjacency from to)
       (hash-update! adjacencies from
-                    (λ (node-list)
-                      (cons to node-list)) '()))
+                    (λ (node-hash)
+                      (hash-set! node-hash to #f)
+                      node-hash) (make-hasheq)))
     (for ([edge (in-list edges)])
       (match edge
         [(cons node-1 node-2)
@@ -53,9 +54,12 @@
 ;------------------------------------------------------------
 
 (define (graph-shortest-path g src [stop? (lambda (node) #f)])
-  (shortest-path (lambda (node) (hash-ref (graph-adjacencies g) node '())) ; node-edges
-                 (lambda (edge) 1)                                         ; edge-weight
-                 (lambda (edge) edge)                                      ; edge-next
+  (shortest-path (lambda (node) (hash-keys                        ; node-edges
+                                 (hash-ref (graph-adjacencies g)
+                                           node
+                                           (make-hasheq))))
+                 (lambda (edge) 1)                                ; edge-weight
+                 (lambda (edge) edge)                             ; edge-next
                  src
                  stop?))
 
@@ -120,13 +124,8 @@
     (for ([node (in-list nodes)])
       (hash-remove! adjacencies node))
     (for* ([node (in-list nodes)]
-           [(n adj-lst) (in-hash adjacencies)])
-      (hash-set! adjacencies n (remq node adj-lst)))))
-
-(define (detach-nodes!/2 g nodes)
-  (let ([adjacencies (graph-adjacencies g)])
-    (for ([node (in-list nodes)])
-      (hash-remove! adjacencies node))))
+           [(n adj-hsh) (in-hash adjacencies)])
+      (hash-remove! adj-hsh node))))
 
 (define (detach-random-nodes! g amount)
   (let ([nodes# (graph-nodes# g)])
@@ -206,13 +205,11 @@ prev1
 ;;;; I can also check if it is better to set a hash value to #f or hash-remove!
 ;;;;  the item.
 
-(define foo
-  (time (for/list       ([_ (in-range 1000)]) (add1 (random 32385))))) ;; takes no time
-(time (detach-random-nodes! as-graph  1000))                           ;; slow
-(time (detach-nodes!        as-graph1 (build-list 1000 add1)))         ;; half slow
-                                                                       ;; (lucky because of picking
-                                                                       ;; the first 1000 nodes)
-(time (detach-nodes!/2      as-graph2 (build-list 1000 add1)))         ;; takes no time
+
+(time (detach-random-nodes! as-graph  1000))                    ;; acceptable
+(time (detach-nodes! as-graph1 (build-list 1000 add1)))         ;; a bit faster
+                                                                ;; (lucky because of picking
+                                                                ;; the first 1000 nodes)
 
 ;; Compare these two after `connected-component/fast' is implemented
 ;(time (length (connected-components as-graph)))
@@ -226,9 +223,11 @@ prev1
   (let* ([nodes# 5]
          [edges '((1 . 2)
                   (1 . 3))]
-         [adjacencies (make-hasheq '((1 . (3 2))
-                                     (2 . (1))
-                                     (3 . (1))))]
+         [adjacencies (make-hasheq
+                       `((1 . ,(make-hasheq '((3 . #f)
+                                              (2 . #f))))
+                         (2 . ,(make-hasheq '((1 . #f))))
+                         (3 . ,(make-hasheq '((1 . #f))))))]
          [test-graph (graph nodes# adjacencies)])
     (test
      (edges->adjacencies edges) => adjacencies
@@ -247,11 +246,14 @@ prev1
   (node-removal-tests))
 
 (define (node-removal-tests)
-  (let ([g-before (graph 3 (make-hasheq '((1 . (3 2))
-                                          (2 . (1))
-                                          (3 . (1)))))]
-        [g-after (graph 3 (make-hasheq '((1 . (3))
-                                         (3 . (1)))))])
+  (let ([g-before (graph 3 (make-hasheq
+                            `((1 . ,(make-hasheq '((3 . #f)
+                                                   (2 . #f))))
+                              (2 . ,(make-hasheq '((1 . #f))))
+                              (3 . ,(make-hasheq '((1 . #f)))))))]
+        [g-after (graph 3 (make-hasheq
+                           `((1 . ,(make-hasheq '((3 . #f))))
+                             (3 . ,(make-hasheq '((1 . #f)))))))])
     (detach-nodes! g-before '(2))
     (test
      (equal? g-before g-after))))
