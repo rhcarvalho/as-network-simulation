@@ -3,7 +3,7 @@
          racket/match
          racket/port
          racket/set
-;         data/queue             ;; for BFS implementation
+         data/queue             ;; for BFS implementation
          tests/eli-tester
          (planet jaymccarthy/dijkstra))
 
@@ -63,6 +63,7 @@
                  src
                  stop?))
 
+; graph number -> seteq
 (define (connected-component g node)
   (define-values (dist _)
     (graph-shortest-path g node))
@@ -86,8 +87,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define (connected-component/fast g node)
-  'bfs)
+; Breadth-fist search
+;
+; graph number -> seteq
+(define (connected-component/fast g source)
+  (define visited (seteq))
+  (define (mark node)
+    (set! visited (set-add visited node)))
+  (define (marked? node)
+    (set-member? visited node))
+  
+  (define q (make-queue))
+  (enqueue! q source)
+  (mark source)
+  (do ()
+    ((queue-empty? q))
+    (let ([v (dequeue! q)])
+      (for ([w (in-hash-keys (hash-ref (graph-adjacencies g) v (make-hasheq)))])
+        (when (not (marked? w))
+          (mark w)
+          (enqueue! q w)))))
+  visited)
+
+; graph -> (listOf seteq)
+(define (connected-components/fast g)
+  (define-values (components _)
+    (for/fold ([components '()]
+               [visited (seteq)])
+      ([node (in-range 1 (add1 (graph-nodes# g)))]
+       #:when (not (set-member? visited node)))
+      (let ([component (connected-component/fast g node)])
+        (values
+         (cons component components)
+         (set-union visited component)))))
+  components)
 
 ; This was intended to be faster than `connected-components'
 ; but it's not really better.
@@ -95,7 +128,7 @@
 ; using BFS, then check again how it performs...
 ;
 ; graph -> (listOf seteq)
-(define (connected-components/2 g)
+(define (connected-components/choose connected-component g)
   (let ([nodes# (graph-nodes# g)])
     (let loop ([unvisited (list->seteq (build-list nodes# add1))]
                [components '()])
@@ -186,11 +219,14 @@ prev1
   (process-graph as-graph))
 
 
-(time (detach-nodes! as-graph (random-nodes as-graph  1000)))
+`(time (detach-nodes! as-graph (random-nodes as-graph  1000)))
 
 ;; Compare these two after `connected-component/fast' is implemented
-;(time (length (connected-components as-graph)))
-;(time (length (connected-components/2 as-graph)))
+(time (length (connected-components      as-graph)))
+(time (length (connected-components/fast as-graph)))
+
+(time (length (connected-components/choose connected-component      as-graph)))
+(time (length (connected-components/choose connected-component/fast as-graph)))
 
 ;------------------------------------------------------------
 ; Tests
@@ -220,7 +256,8 @@ prev1
      test-graph
      
      (length (connected-components test-graph)) => 3))
-  (node-removal-tests))
+  (node-removal-tests)
+  (bfs-tests))
 
 (define (node-removal-tests)
   (let ([g-before (graph 3 (make-hasheq
@@ -234,5 +271,14 @@ prev1
     (detach-nodes! g-before '(2))
     (test
      (equal? g-before g-after))))
+
+(define (bfs-tests)
+  (define small-graph
+    (call-with-input-file "small_graph.txt"
+      (λ (in) (load-graph in))))
+  (test
+   (connected-component/fast small-graph 6)
+   =>
+   (seteq 6 9 10)))
 
 (all-tests)
