@@ -127,11 +127,11 @@
            [(n adj-hsh) (in-hash adjacencies)])
       (hash-remove! adj-hsh node))))
 
-(define (detach-random-nodes! g amount)
+(define (random-nodes g amount)
   (let ([nodes# (graph-nodes# g)])
-    (detach-nodes! g (for/list ([_ (in-range amount)])
-                       ; random number in range [1; nodes#]
-                       (add1 (random nodes#))))))
+    (for/list ([_ (in-range amount)])
+      ; random number in range [1; nodes#]
+      (add1 (random nodes#)))))
 
 
 ;------------------------------------------------------------
@@ -182,7 +182,7 @@ prev1
     (printf "% nodes detached / # connected components / % nodes in the largest component~n")
     (printf "0\t\t   ~a\t\t\t    100~n" 1 #|(connected-components# as-graph)|#)
     (for ([i (in-range 10)])
-      (detach-random-nodes! g 1%*nodes)
+      (detach-nodes! g (random-nodes g 1%*nodes))
       (let ([components (connected-components g)])
         (printf "~a\t\t   ~a\t\t\t    ~a~n"
                 (add1 i)
@@ -206,7 +206,7 @@ prev1
 ;;;;  the item.
 
 
-(time (detach-random-nodes! as-graph  1000))                    ;; acceptable
+(time (detach-nodes! as-graph  (random-nodes as-graph 1000)))   ;; acceptable
 (time (detach-nodes! as-graph1 (build-list 1000 add1)))         ;; a bit faster
                                                                 ;; (lucky because of picking
                                                                 ;; the first 1000 nodes)
