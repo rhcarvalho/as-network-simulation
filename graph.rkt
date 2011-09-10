@@ -3,9 +3,8 @@
          racket/match
          racket/port
          racket/set
-         data/queue             ;; for BFS implementation
-         tests/eli-tester
-         (planet jaymccarthy/dijkstra))
+         data/queue
+         tests/eli-tester)
 
 ;------------------------------------------------------------
 ; Definitions
@@ -53,44 +52,10 @@
 ; Algorithms
 ;------------------------------------------------------------
 
-(define (graph-shortest-path g src [stop? (lambda (node) #f)])
-  (shortest-path (lambda (node) (hash-keys                        ; node-edges
-                                 (hash-ref (graph-adjacencies g)
-                                           node
-                                           (make-hasheq))))
-                 (lambda (edge) 1)                                ; edge-weight
-                 (lambda (edge) edge)                             ; edge-next
-                 src
-                 stop?))
-
-; graph number -> seteq
-(define (connected-component g node)
-  (define-values (dist _)
-    (graph-shortest-path g node))
-  (list->seteq (hash-keys dist)))
-
-; Very slow and inneficient implementation
-;
-; graph -> (listOf seteq)
-(define (connected-components g)
-  (define-values (components _)
-    (for/fold ([components '()]
-               [visited (seteq)])
-      ([node (in-range 1 (add1 (graph-nodes# g)))]
-       #:when (not (set-member? visited node)))
-      (let ([component (connected-component g node)])
-        (values
-         (cons component components)
-         (set-union visited component)))))
-  components)
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; Breadth-fist search
 ;
 ; graph number -> seteq
-(define (connected-component/fast g source)
+(define (connected-component g source)
   (define visited (seteq))
   (define (mark node)
     (set! visited (set-add visited node)))
@@ -110,38 +75,17 @@
   visited)
 
 ; graph -> (listOf seteq)
-(define (connected-components/fast g)
+(define (connected-components g)
   (define-values (components _)
     (for/fold ([components '()]
                [visited (seteq)])
       ([node (in-range 1 (add1 (graph-nodes# g)))]
        #:when (not (set-member? visited node)))
-      (let ([component (connected-component/fast g node)])
+      (let ([component (connected-component g node)])
         (values
          (cons component components)
          (set-union visited component)))))
   components)
-
-; This was intended to be faster than `connected-components'
-; but it's not really better.
-; I must consider first implementing `connected-component/fast'
-; using BFS, then check again how it performs...
-;
-; graph -> (listOf seteq)
-(define (connected-components/choose connected-component g)
-  (let ([nodes# (graph-nodes# g)])
-    (let loop ([unvisited (list->seteq (build-list nodes# add1))]
-               [components '()])
-      (if (set-empty? unvisited)
-          components
-          (let* ([chosen (set-item unvisited)]
-                 [component (connected-component g chosen)])
-            (loop (set-subtract unvisited component)
-                  (cons component components)))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
 
 
 ; (listOf seteq) number -> number
@@ -168,42 +112,14 @@
 
 
 ;------------------------------------------------------------
-; Helpers
-;------------------------------------------------------------
-
-; return one arbitrary item of the set
-;
-; set -> any/c
-(define (set-item s)
-  (for/first ([item (in-set s)]) item))
-
-;------------------------------------------------------------
 ; Computations
 ;------------------------------------------------------------
-#|
-(define small-graph
-  (call-with-input-file "small_graph.txt"
-    (λ (in) (load-graph in))))
-
-(define-values (dist1 prev1)
-  (graph-shortest-path small-graph 10))
-
-small-graph
-dist1
-prev1
-(shortest-path-to prev1 5)
-(connected-component small-graph 10)
-(connected-component small-graph 1)
-|#
 
 (define as-graph
   (call-with-input-file "as_graph.txt"
     (λ (in) (load-graph in))))
-(define as-graph1
-  (call-with-input-file "as_graph.txt"
-    (λ (in) (load-graph in))))
 
-(define (process-graph connected-components g)
+(define (process-graph g)
   (let* ([nodes# (graph-nodes# g)]
          [1%*nodes (truncate (/ nodes# 100))])
     (printf "The graph has ~a nodes.~n" nodes#)
@@ -218,17 +134,7 @@ prev1
                 (real->decimal-string
                  (%-of-nodes/largest-component components nodes#)))))))
 
-(time (process-graph connected-components      as-graph))
-(time (process-graph connected-components/fast as-graph1))
-
-;(time (detach-nodes! as-graph (random-nodes as-graph  1000)))
-
-;; Compare these two after `connected-component/fast' is implemented
-;(time (length (connected-components      as-graph)))
-;(time (length (connected-components/fast as-graph)))
-
-;(time (length (connected-components/choose connected-component      as-graph)))
-;(time (length (connected-components/choose connected-component/fast as-graph)))
+(time (process-graph as-graph))
 
 ;------------------------------------------------------------
 ; Tests
@@ -279,7 +185,7 @@ prev1
     (call-with-input-file "small_graph.txt"
       (λ (in) (load-graph in))))
   (test
-   (connected-component/fast small-graph 6)
+   (connected-component small-graph 6)
    =>
    (seteq 6 9 10)))
 
