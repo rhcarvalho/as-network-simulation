@@ -28,18 +28,17 @@
 ; (listOf cons) -> (hash ((number . list) ...))
 (define (edges->adjacencies edges)
   (let ([adjacencies (make-hasheq)])
+    ; add node-to to node-from's adjacency list
+    (define (add-adjacency from to)
+      (hash-update! adjacencies from
+                    (λ (node-list)
+                      (cons to node-list)) '()))
     (for ([edge (in-list edges)])
       (match edge
-        [(cons node-from node-to)
+        [(cons node-1 node-2)
          (begin
-           ; add node-to to node-from's adjacency list
-           (hash-update! adjacencies node-from
-                         (λ (node-list)
-                           (cons node-to node-list)) '())
-           ; add node-from to node-to's adjacency list
-           (hash-update! adjacencies node-to
-                         (λ (node-list)
-                           (cons node-from node-list)) '()))]))
+           (add-adjacency node-1 node-2)
+           (add-adjacency node-2 node-1))]))
     adjacencies))
 
 ; input-port -> (listOf pair)
