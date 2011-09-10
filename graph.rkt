@@ -199,8 +199,11 @@ prev1
 (define as-graph
   (call-with-input-file "as_graph.txt"
     (λ (in) (load-graph in))))
+(define as-graph1
+  (call-with-input-file "as_graph.txt"
+    (λ (in) (load-graph in))))
 
-(define (process-graph g)
+(define (process-graph connected-components g)
   (let* ([nodes# (graph-nodes# g)]
          [1%*nodes (truncate (/ nodes# 100))])
     (printf "The graph has ~a nodes.~n" nodes#)
@@ -215,18 +218,17 @@ prev1
                 (real->decimal-string
                  (%-of-nodes/largest-component components nodes#)))))))
 
-`(time
-  (process-graph as-graph))
+(time (process-graph connected-components      as-graph))
+(time (process-graph connected-components/fast as-graph1))
 
-
-`(time (detach-nodes! as-graph (random-nodes as-graph  1000)))
+;(time (detach-nodes! as-graph (random-nodes as-graph  1000)))
 
 ;; Compare these two after `connected-component/fast' is implemented
-(time (length (connected-components      as-graph)))
-(time (length (connected-components/fast as-graph)))
+;(time (length (connected-components      as-graph)))
+;(time (length (connected-components/fast as-graph)))
 
-(time (length (connected-components/choose connected-component      as-graph)))
-(time (length (connected-components/choose connected-component/fast as-graph)))
+;(time (length (connected-components/choose connected-component      as-graph)))
+;(time (length (connected-components/choose connected-component/fast as-graph)))
 
 ;------------------------------------------------------------
 ; Tests
