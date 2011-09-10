@@ -167,14 +167,6 @@ prev1
   (call-with-input-file "as_graph.txt"
     (λ (in) (load-graph in))))
 
-(define as-graph1
-  (call-with-input-file "as_graph.txt"
-    (λ (in) (load-graph in))))
-
-(define as-graph2
-  (call-with-input-file "as_graph.txt"
-    (λ (in) (load-graph in))))
-
 (define (process-graph g)
   (let* ([nodes# (graph-nodes# g)]
          [1%*nodes (truncate (/ nodes# 100))])
@@ -193,23 +185,8 @@ prev1
 `(time
   (process-graph as-graph))
 
-;;;; The timings computed below show that it is currently expensive to detach nodes.
-;;;;
-;;;; I believe I can make it better if I change the data structure of `graph'.
-;;;;
-;;;; The adjacency list could be a hash of (node . hash of (node . (or #t #f))),
-;;;;  so that in order to "remove" an existing adjacency all that is needed
-;;;;  is to set a hash value to #f -- instead of 1) search for an node in a list;
-;;;;  and 2) make a new list without that node (remq).
-;;;;
-;;;; I can also check if it is better to set a hash value to #f or hash-remove!
-;;;;  the item.
 
-
-(time (detach-nodes! as-graph  (random-nodes as-graph 1000)))   ;; acceptable
-(time (detach-nodes! as-graph1 (build-list 1000 add1)))         ;; a bit faster
-                                                                ;; (lucky because of picking
-                                                                ;; the first 1000 nodes)
+(time (detach-nodes! as-graph (random-nodes as-graph  1000)))
 
 ;; Compare these two after `connected-component/fast' is implemented
 ;(time (length (connected-components as-graph)))
