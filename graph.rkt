@@ -205,7 +205,23 @@
     (printf "·-----------------------------------------------------------------------------·~n")
     (newline)))
 
-(time (print-graph-detachment-table "as_graph.txt"))
+; string -> void
+(define (print-graph-detachment-csv name)
+  (define (print-line items)
+    (map display (add-between items ","))
+    (newline))
+  (let-values ([(nodes# next-line) (process-graph name)])
+    (print-line (list "% nodes detached"
+                      "# connected components (random)"
+                      "% nodes in the largest component (random)"
+                      "# connected components (directed)"
+                      "% nodes in the largest component (directed)"))
+    (print-line '(0 1 100.00 1 100.00))
+    (for ([i (in-range 10)])
+      (print-line (next-line)))))
+
+;(time (print-graph-detachment-table "as_graph.txt"))
+(time (print-graph-detachment-csv "as_graph.txt"))
 
 
 ;------------------------------------------------------------
