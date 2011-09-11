@@ -3,8 +3,8 @@
          racket/match
          racket/port
          racket/set
-         racket/system
          data/queue
+         srfi/13
          tests/eli-tester)
 
 ;------------------------------------------------------------
@@ -156,11 +156,15 @@
          [nodes# (graph-nodes# g/random)]
          [1%*nodes (truncate (/ nodes# 100))])
     ;--------------------------------------------------------
-    (define (python-output . items)
-      (system
-       (apply format
-              "python -c \"print '|%8d |%12d |%18.2f |%12d |%18.2f |' % (~s,~s,~s,~s,~s)\""
-              items)))
+    (define (print-table-line . items)
+      (define (to-string item)
+        (cond
+          [(flonum? item) (real->decimal-string item)]
+          [else (number->string item)]))
+      (define (pad item len)
+        (string-pad (to-string item) len))
+      (apply printf "|~a |~a |~a |~a |~a |~n"
+             (map pad items '(8 12 18 12 18))))
     ;--------------------------------------------------------
     (printf "The graph has ~a nodes.~n" nodes#)
     (printf ".-----------------------------------------------------------------------------.~n")
@@ -168,17 +172,17 @@
     (printf "| % nodes | # connected | % nodes in the    | # connected | % nodes in the    |~n")
     (printf "|detached |  components | largest component |  components | largest component |~n")
     (printf "|-----------------------------------------------------------------------------|~n")
-    (python-output 0 1 100.00 1 100.00)
+    (print-table-line 0 1 100.00 1 100.00)
     (for ([i (in-range 10)])
       (detach-nodes! g/random   (random-nodes         g/random   1%*nodes))
       (detach-nodes! g/directed (most-connected-nodes g/directed 1%*nodes))
       (let ([components/random   (connected-components g/random)]
             [components/directed (connected-components g/directed)])
-        (python-output (add1 i)
-                       (length components/random)
-                       (%-of-nodes/largest-component components/random nodes#)
-                       (length components/directed)
-                       (%-of-nodes/largest-component components/directed nodes#))))
+        (print-table-line (add1 i)
+                          (length components/random)
+                          (%-of-nodes/largest-component components/random nodes#)
+                          (length components/directed)
+                          (%-of-nodes/largest-component components/directed nodes#))))
     (printf "·-----------------------------------------------------------------------------·~n")
     (newline)))
 
