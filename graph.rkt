@@ -3,8 +3,8 @@
          racket/match
          racket/port
          racket/set
+         racket/system
          data/queue
-         srfi/13
          tests/eli-tester)
 
 ;------------------------------------------------------------
@@ -155,26 +155,31 @@
          [g/directed (load-graph-from-file name)]
          [nodes# (graph-nodes# g/random)]
          [1%*nodes (truncate (/ nodes# 100))])
+    ;--------------------------------------------------------
+    (define (python-output . items)
+      (system
+       (apply format
+              "python -c \"print '|%8d |%12d |%18.2f |%12d |%18.2f |' % (~s,~s,~s,~s,~s)\""
+              items)))
+    ;--------------------------------------------------------
     (printf "The graph has ~a nodes.~n" nodes#)
-    (printf "----------------------------------------------------------------------------~n")
-    (printf "         |        random detachment        |        directed detachment     ~n")
-    (printf " % nodes | # connected | % nodes in the    | # connected | % nodes in the   ~n")
-    (printf "detached |  components | largest component |  components | largest component~n")
-    (printf "----------------------------------------------------------------------------~n")
-    (printf "0        | 1           | 100.00            | 1           | 100.00           ~n")
+    (printf ".-----------------------------------------------------------------------------.~n")
+    (printf "|         |        random detachment        |        directed detachment      |~n")
+    (printf "| % nodes | # connected | % nodes in the    | # connected | % nodes in the    |~n")
+    (printf "|detached |  components | largest component |  components | largest component |~n")
+    (printf "|-----------------------------------------------------------------------------|~n")
+    (python-output 0 1 100.00 1 100.00)
     (for ([i (in-range 10)])
       (detach-nodes! g/random   (random-nodes         g/random   1%*nodes))
       (detach-nodes! g/directed (most-connected-nodes g/directed 1%*nodes))
       (let ([components/random   (connected-components g/random)]
             [components/directed (connected-components g/directed)])
-        (printf "~a| ~a| ~a| ~a| ~a~n"
-                (string-pad-right (number->string (add1 i)) 9)
-                (string-pad-right (number->string (length components/random)) 12)
-                (string-pad-right (real->decimal-string
-                                   (%-of-nodes/largest-component components/random nodes#) 4) 18)
-                (string-pad-right (number->string (length components/directed)) 12)
-                (string-pad-right (real->decimal-string
-                                   (%-of-nodes/largest-component components/directed nodes#) 4) 18))))
+        (python-output (add1 i)
+                       (length components/random)
+                       (%-of-nodes/largest-component components/random nodes#)
+                       (length components/directed)
+                       (%-of-nodes/largest-component components/directed nodes#))))
+    (printf "·-----------------------------------------------------------------------------·~n")
     (newline)))
 
 (time (process-graph "as_graph.txt"))
