@@ -1,5 +1,6 @@
 #lang racket/base
-(require racket/list
+(require racket/generator
+         racket/list
          racket/match
          racket/port
          racket/set
@@ -149,44 +150,62 @@
 ; Computations
 ;------------------------------------------------------------
 
-; string -> void
+; string -> number generator
 (define (process-graph name)
   (let* ([g/random   (load-graph-from-file name)]
          [g/directed (load-graph-from-file name)]
          [nodes# (graph-nodes# g/random)]
-         [1%*nodes (truncate (/ nodes# 100))])
-    ;--------------------------------------------------------
-    (define (print-table-line . items)
-      (define (to-string item)
-        (cond
-          [(flonum? item) (real->decimal-string item)]
-          [else (number->string item)]))
-      (define (pad item len)
-        (string-pad (to-string item) len))
-      (apply printf "|~a |~a |~a |~a |~a |~n"
-             (map pad items '(8 12 18 12 18))))
-    ;--------------------------------------------------------
+         [1%*nodes (truncate (/ nodes# 100))]
+         [detacher/random (graph-detacher g/random
+                                          random-nodes
+                                          1%*nodes)]
+         [detacher/directed (graph-detacher g/directed
+                                            most-connected-nodes
+                                            1%*nodes)]
+         [next-line (generator ()
+                      (for ([i (in-naturals 1)])
+                        (yield (append (detacher/random)
+                                       (cdr (detacher/directed))))))])
+    (values nodes# next-line)))
+
+; graph procedure number -> generator
+(define (graph-detacher g take-nodes-proc amount)
+  (generator ()
+    (let ([nodes# (graph-nodes# g)])
+      (for ([i (in-naturals 1)])
+        (detach-nodes! g (take-nodes-proc g amount))
+        (let ([components (connected-components g)])
+          (yield (list i
+                       (length components)
+                       (%-of-nodes/largest-component components nodes#))))))))
+
+; string -> void
+(define (print-graph-detachment-table name)
+  ;--------------------------------------------------------
+  (define (print-table-line items)
+    (define (to-string item)
+      (cond
+        [(flonum? item) (real->decimal-string item)]
+        [else (number->string item)]))
+    (define (pad item len)
+      (string-pad (to-string item) len))
+    (apply printf "|~a |~a |~a |~a |~a |~n"
+           (map pad items '(8 12 18 12 18))))
+  ;--------------------------------------------------------
+  (let-values ([(nodes# next-line) (process-graph name)])
     (printf "The graph has ~a nodes.~n" nodes#)
     (printf ".-----------------------------------------------------------------------------.~n")
     (printf "|         |        random detachment        |        directed detachment      |~n")
     (printf "| % nodes | # connected | % nodes in the    | # connected | % nodes in the    |~n")
     (printf "|detached |  components | largest component |  components | largest component |~n")
     (printf "|-----------------------------------------------------------------------------|~n")
-    (print-table-line 0 1 100.00 1 100.00)
+    (print-table-line '(0 1 100.00 1 100.00))
     (for ([i (in-range 10)])
-      (detach-nodes! g/random   (random-nodes         g/random   1%*nodes))
-      (detach-nodes! g/directed (most-connected-nodes g/directed 1%*nodes))
-      (let ([components/random   (connected-components g/random)]
-            [components/directed (connected-components g/directed)])
-        (print-table-line (add1 i)
-                          (length components/random)
-                          (%-of-nodes/largest-component components/random nodes#)
-                          (length components/directed)
-                          (%-of-nodes/largest-component components/directed nodes#))))
+      (print-table-line (next-line)))
     (printf "·-----------------------------------------------------------------------------·~n")
     (newline)))
 
-(time (process-graph "as_graph.txt"))
+(time (print-graph-detachment-table "as_graph.txt"))
 
 
 ;------------------------------------------------------------
