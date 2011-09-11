@@ -4,6 +4,7 @@
          racket/port
          racket/set
          data/queue
+         srfi/13
          tests/eli-tester)
 
 ;------------------------------------------------------------
@@ -113,6 +114,9 @@
 
 ;------------------------------------------------------------
 
+; Remove nodes from the graph `g' destructively.
+;
+; graph (listOf number) -> void
 (define (detach-nodes! g nodes)
   (let ([adjacencies (graph-adjacencies g)])
     (for ([node (in-list nodes)])
@@ -121,35 +125,59 @@
            [(n adj-hsh) (in-hash adjacencies)])
       (hash-remove! adj-hsh node))))
 
+; Return a list of `amount' random nodes.
+;
+; graph number -> list
 (define (random-nodes g amount)
   (let ([nodes# (graph-nodes# g)])
     (for/list ([_ (in-range amount)])
       ; random number in range [1; nodes#]
       (add1 (random nodes#)))))
 
+; Return a list of `pos' nodes sorted by highest degree.
+;
+; graph number [procedure] -> list
+(define (most-connected-nodes g pos [proc car])
+  (map proc (take
+             (sort (hash->list (graph-adjacencies g))
+                   >
+                   #:key (compose hash-count cdr))
+             pos)))
+
 
 ;------------------------------------------------------------
 ; Computations
 ;------------------------------------------------------------
 
-(define as-graph (load-graph-from-file "as_graph.txt"))
-
-(define (process-graph g)
-  (let* ([nodes# (graph-nodes# g)]
+; string -> void
+(define (process-graph name)
+  (let* ([g/random   (load-graph-from-file name)]
+         [g/directed (load-graph-from-file name)]
+         [nodes# (graph-nodes# g/random)]
          [1%*nodes (truncate (/ nodes# 100))])
     (printf "The graph has ~a nodes.~n" nodes#)
-    (printf "% nodes detached / # connected components / % nodes in the largest component~n")
-    (printf "0\t\t   ~a\t\t\t    100.00~n" 1 #|(length (connected-components g))|#)
+    (printf "----------------------------------------------------------------------------~n")
+    (printf "         |        random detachment        |        directed detachment     ~n")
+    (printf " % nodes | # connected | % nodes in the    | # connected | % nodes in the   ~n")
+    (printf "detached |  components | largest component |  components | largest component~n")
+    (printf "----------------------------------------------------------------------------~n")
+    (printf "0        | 1           | 100.00            | 1           | 100.00           ~n")
     (for ([i (in-range 10)])
-      (detach-nodes! g (random-nodes g 1%*nodes))
-      (let ([components (connected-components g)])
-        (printf "~a\t\t   ~a\t\t\t    ~a~n"
-                (add1 i)
-                (length components)
-                (real->decimal-string
-                 (%-of-nodes/largest-component components nodes#)))))))
+      (detach-nodes! g/random   (random-nodes         g/random   1%*nodes))
+      (detach-nodes! g/directed (most-connected-nodes g/directed 1%*nodes))
+      (let ([components/random   (connected-components g/random)]
+            [components/directed (connected-components g/directed)])
+        (printf "~a| ~a| ~a| ~a| ~a~n"
+                (string-pad-right (number->string (add1 i)) 9)
+                (string-pad-right (number->string (length components/random)) 12)
+                (string-pad-right (real->decimal-string
+                                   (%-of-nodes/largest-component components/random nodes#) 4) 18)
+                (string-pad-right (number->string (length components/directed)) 12)
+                (string-pad-right (real->decimal-string
+                                   (%-of-nodes/largest-component components/directed nodes#) 4) 18))))
+    (newline)))
 
-(time (process-graph as-graph))
+(time (process-graph "as_graph.txt"))
 
 
 ;------------------------------------------------------------
