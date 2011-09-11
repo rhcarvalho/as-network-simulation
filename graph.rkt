@@ -15,6 +15,11 @@
 ; adjacencies = (hasheq ((number . hasheq) ...))
 (struct graph (nodes# adjacencies) #:transparent)
 
+; string -> graph
+(define (load-graph-from-file name)
+  (call-with-input-file name
+    (λ (in) (load-graph in))))
+
 ; Load an *undirected* graph structure from file.
 ; The first line is the number of nodes in the graph.
 ; The next lines are pair of numbers representing one
@@ -127,9 +132,7 @@
 ; Computations
 ;------------------------------------------------------------
 
-(define as-graph
-  (call-with-input-file "as_graph.txt"
-    (λ (in) (load-graph in))))
+(define as-graph (load-graph-from-file "as_graph.txt"))
 
 (define (process-graph g)
   (let* ([nodes# (graph-nodes# g)]
@@ -161,11 +164,8 @@
                                             (2 . ,null))))
                        (2 . ,(make-hasheq `((1 . ,null))))
                        (3 . ,(make-hasheq `((1 . ,null))))))]
-       [test-graph (graph nodes# adjacencies)])
-  
-  (define small-graph
-    (call-with-input-file "small_graph.txt"
-      (λ (in) (load-graph in))))
+       [test-graph (graph nodes# adjacencies)]
+       [small-graph (load-graph-from-file "small_graph.txt")])
   
   (define (test-basic)
     (test
