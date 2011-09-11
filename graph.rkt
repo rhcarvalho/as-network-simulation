@@ -22,13 +22,23 @@
 ;
 ; input-port -> graph
 (define (load-graph port)
-  (graph (read port) (edges->adjacencies (load-edges port))))
+  (graph (read port)
+         (edges->adjacencies (load-edges port))))
 
-; (listOf cons) -> (hash ((number . list) ...))
+; The adjacencies are kept in a hash of hashes for
+; improved performance on node detachment.
+; The first level hash keys are nodes, and the values
+; are hashes of (number . null).
+; For instance, an edge 1<->2 becomes:
+;
+;   '#hasheq((1 . #hasheq((2 . ())))
+;            (2 . #hasheq((1 . ()))))
+;
+; (listOf pair) -> (hasheq ((number . hasheq) ...))
 (define (edges->adjacencies edges)
   (let ([adjacencies (make-hasheq)])
-    ; add node-to to node-from's adjacency list
-    (define (add-adjacency from to)
+    ; add node `to' to `from''s adjacency list
+    (define (add-adjacency! from to)
       (hash-update! adjacencies from
                     (λ (node-hash)
                       (hash-set! node-hash to null)
@@ -37,8 +47,8 @@
       (match edge
         [(cons node-1 node-2)
          (begin
-           (add-adjacency node-1 node-2)
-           (add-adjacency node-2 node-1))]))
+           (add-adjacency! node-1 node-2)
+           (add-adjacency! node-2 node-1))]))
     adjacencies))
 
 ; input-port -> (listOf pair)
@@ -52,26 +62,29 @@
 ; Algorithms
 ;------------------------------------------------------------
 
-; Breadth-fist search
+; Breadth-first search
 ;
 ; graph number -> seteq
 (define (connected-component g source)
+  ;---------------------------------------
   (define visited (seteq))
   (define (mark node)
     (set! visited (set-add visited node)))
   (define (marked? node)
     (set-member? visited node))
-  
+  ;---------------------------------------
   (define q (make-queue))
   (enqueue! q source)
   (mark source)
-  (do ()
-    ((queue-empty? q))
-    (let ([v (dequeue! q)])
-      (for ([w (in-hash-keys (hash-ref (graph-adjacencies g) v (make-hasheq)))])
-        (when (not (marked? w))
-          (mark w)
-          (enqueue! q w)))))
+  (let ([adjacencies (graph-adjacencies g)])
+    (do ()
+      ((queue-empty? q))
+      (let* ([node (dequeue! q)]
+             [neighbors (hash-ref adjacencies node (make-hasheq))])
+        (for ([neighbor (in-hash-keys neighbors)])
+          (when (not (marked? neighbor))
+            (mark neighbor)
+            (enqueue! q neighbor))))))
   visited)
 
 ; graph -> (listOf seteq)
@@ -86,7 +99,6 @@
          (cons component components)
          (set-union visited component)))))
   components)
-
 
 ; (listOf seteq) number -> number
 (define (%-of-nodes/largest-component components nodes#)
@@ -124,7 +136,7 @@
          [1%*nodes (truncate (/ nodes# 100))])
     (printf "The graph has ~a nodes.~n" nodes#)
     (printf "% nodes detached / # connected components / % nodes in the largest component~n")
-    (printf "0\t\t   ~a\t\t\t    100~n" 1 #|(connected-components# as-graph)|#)
+    (printf "0\t\t   ~a\t\t\t    100.00~n" 1 #|(length (connected-components g))|#)
     (for ([i (in-range 10)])
       (detach-nodes! g (random-nodes g 1%*nodes))
       (let ([components (connected-components g)])
@@ -136,20 +148,26 @@
 
 (time (process-graph as-graph))
 
+
 ;------------------------------------------------------------
 ; Tests
 ;------------------------------------------------------------
 
-(define (all-tests)
-  (let* ([nodes# 5]
-         [edges '((1 . 2)
-                  (1 . 3))]
-         [adjacencies (make-hasheq
-                       `((1 . ,(make-hasheq `((3 . ,null)
-                                              (2 . ,null))))
-                         (2 . ,(make-hasheq `((1 . ,null))))
-                         (3 . ,(make-hasheq `((1 . ,null))))))]
-         [test-graph (graph nodes# adjacencies)])
+(let* ([nodes# 5]
+       [edges '((1 . 2)
+                (1 . 3))]
+       [adjacencies (make-hasheq
+                     `((1 . ,(make-hasheq `((3 . ,null)
+                                            (2 . ,null))))
+                       (2 . ,(make-hasheq `((1 . ,null))))
+                       (3 . ,(make-hasheq `((1 . ,null))))))]
+       [test-graph (graph nodes# adjacencies)])
+  
+  (define small-graph
+    (call-with-input-file "small_graph.txt"
+      (λ (in) (load-graph in))))
+  
+  (define (test-basic)
     (test
      (edges->adjacencies edges) => adjacencies
      
@@ -164,29 +182,25 @@
      test-graph
      
      (length (connected-components test-graph)) => 3))
-  (node-removal-tests)
-  (bfs-tests))
-
-(define (node-removal-tests)
-  (let ([g-before (graph 3 (make-hasheq
-                            `((1 . ,(make-hasheq `((3 . ,null)
-                                                   (2 . ,null))))
-                              (2 . ,(make-hasheq `((1 . ,null))))
-                              (3 . ,(make-hasheq `((1 . ,null)))))))]
-        [g-after (graph 3 (make-hasheq
-                           `((1 . ,(make-hasheq `((3 . ,null))))
-                             (3 . ,(make-hasheq `((1 . ,null)))))))])
-    (detach-nodes! g-before '(2))
+  
+  (define (bfs-tests)
     (test
-     (equal? g-before g-after))))
-
-(define (bfs-tests)
-  (define small-graph
-    (call-with-input-file "small_graph.txt"
-      (λ (in) (load-graph in))))
-  (test
-   (connected-component small-graph 6)
-   =>
-   (seteq 6 9 10)))
-
-(all-tests)
+     (connected-component small-graph 6)
+     =>
+     (seteq 6 9 10)))
+  
+  (define (node-removal-tests)
+    (let ([g-before (graph 3 (hash-copy adjacencies))]
+          [g-after (graph 3 (make-hasheq
+                             `((1 . ,(make-hasheq `((3 . ,null))))
+                               (3 . ,(make-hasheq `((1 . ,null)))))))])
+      (detach-nodes! g-before '(2))
+      (test
+       (equal? g-before g-after))))
+  
+  (define (all-tests)
+    (test-basic)
+    (node-removal-tests)
+    (bfs-tests))
+  
+  (all-tests))
