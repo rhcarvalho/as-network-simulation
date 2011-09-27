@@ -6,8 +6,9 @@
          racket/set
          srfi/13)
 
-(provide (all-defined-out)
-         (struct-out graph))
+(provide
+ print-graph-detachment-csv
+ print-graph-detachment-table)
 
 ;------------------------------------------------------------
 ; Definitions

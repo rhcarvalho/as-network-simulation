@@ -2,8 +2,17 @@
 (require racket/port
          racket/set
          rackunit
-         rackunit/gui
-         "graph.rkt")
+         rackunit/gui)
+
+(require/expose "graph.rkt"
+                (graph
+                 load-graph
+                 load-graph-from-file
+                 load-edges
+                 edges->adjacencies
+                 connected-component
+                 connected-components
+                 detach-nodes!))
 
 ;------------------------------------------------------------
 ; Tests
