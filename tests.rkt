@@ -2,8 +2,7 @@
 (require racket/port
          racket/set
          tests/eli-tester
-         "graph.rkt"
-         "load.rkt")
+         "graph.rkt")
 
 ;------------------------------------------------------------
 ; Tests
