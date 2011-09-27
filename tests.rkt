@@ -1,7 +1,8 @@
 #lang racket/base
 (require racket/port
          racket/set
-         tests/eli-tester
+         rackunit
+         rackunit/gui
          "graph.rkt")
 
 ;------------------------------------------------------------
@@ -18,41 +19,40 @@
                        (3 . ,(make-hasheq `((1 . ,null))))))]
        [test-graph (graph nodes# adjacencies)]
        [small-graph (load-graph-from-file "small_graph.txt")])
-  
-  (define (test-basic)
-    (test
-     (edges->adjacencies edges) => adjacencies
-     
-     (call-with-input-bytes #"1 2\n1 3"
-       (λ (in) (load-edges in)))
-     =>
-     edges
-     
-     (call-with-input-bytes #"5\n1 2\n1 3"
-       (λ (in) (load-graph in)))
-     =>
-     test-graph
-     
-     (length (connected-components test-graph)) => 3))
-  
-  (define (bfs-tests)
-    (test
-     (connected-component small-graph 6)
-     =>
-     (seteq 6 9 10)))
-  
-  (define (node-removal-tests)
-    (let ([g-before (graph 3 (hash-copy adjacencies))]
-          [g-after (graph 3 (make-hasheq
-                             `((1 . ,(make-hasheq `((3 . ,null))))
-                               (3 . ,(make-hasheq `((1 . ,null)))))))])
-      (detach-nodes! g-before '(2))
-      (test
-       (equal? g-before g-after))))
-  
-  (define (all-tests)
-    (test-basic)
-    (node-removal-tests)
-    (bfs-tests))
-  
-  (all-tests))
+  (test/gui
+   (test-suite
+    "Internet (AS) network detachment tests"
+    
+    (test-suite
+     "Basic tests"
+     (test-equal?
+      "Can load edges"
+      (call-with-input-bytes #"1 2\n1 3"
+        (λ (in) (load-edges in))) edges)
+     (test-equal?
+      "Can create adjacencies list from edges"
+      (edges->adjacencies edges) adjacencies)
+     (test-equal?
+      "Can load a complete graph"
+      (call-with-input-bytes #"5\n1 2\n1 3"
+        (λ (in) (load-graph in))) test-graph))
+    
+    (test-suite
+     "BFS tests"
+     (test-equal?
+      "Can find a connected component"
+      (connected-component small-graph 6) (seteq 6 9 10))
+     (test-equal?
+      "Number of connected components is correct"
+      (length (connected-components test-graph)) 3))
+    
+    (test-suite
+     "Node removal tests"
+     (let ([g-before (graph 3 (hash-copy adjacencies))]  ; not correct, should be a deep copy
+           [g-after (graph 3 (make-hasheq
+                              `((1 . ,(make-hasheq `((3 . ,null))))
+                                (3 . ,(make-hasheq `((1 . ,null)))))))])
+       (test-case
+        "Nodes are detached correctly"
+        (detach-nodes! g-before '(2))
+        (check-equal? g-before g-after)))))))
