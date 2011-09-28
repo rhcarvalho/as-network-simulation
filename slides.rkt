@@ -6,6 +6,8 @@
 (define as-ncc-40 (bitmap "images/as-ncc-40.png"))
 (define as-plcc-10 (bitmap "images/as-plcc-10.png"))
 (define as-plcc-40 (bitmap "images/as-plcc-40.png"))
+(define as-ncc-10abs (bitmap "images/as-ncc-10abs.png"))
+(define as-plcc-10abs (bitmap "images/as-plcc-10abs.png"))
 
 
 ; ----- Config -----
@@ -87,6 +89,10 @@
 (slide (with-width charts-w as-ncc-40))
 (slide (with-width charts-w as-plcc-10))
 (slide (with-width charts-w as-plcc-40))
+(slide
+ @para{What if we@bt{detach} as few as@bt{10 nodes}?})
+(slide (with-width charts-w as-ncc-10abs))
+(slide (with-width charts-w as-plcc-10abs))
 
 (slide
  #:title "Results"
