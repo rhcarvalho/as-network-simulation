@@ -12,7 +12,7 @@
 
 ; ----- Config -----
 (set-page-numbers-visible! #f)
-(define charts-w (* 9/10 client-w))
+(define charts-w (* 0.98 client-w))
 
 
 ; ----- Helper functions -----
