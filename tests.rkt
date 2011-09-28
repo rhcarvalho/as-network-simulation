@@ -12,6 +12,7 @@
                  edges->adjacencies
                  connected-component
                  connected-components
+                 average-degree
                  detach-nodes!))
 
 ;------------------------------------------------------------
@@ -45,6 +46,15 @@
       "Can load a complete graph"
       (call-with-input-bytes #"5\n1 2\n1 3"
         (λ (in) (load-graph in))) test-graph))
+    
+    (test-suite
+     "Average degree tests"
+     (test-equal?
+      "Compute correct average degree of graphs with disconnected nodes"
+      (average-degree test-graph) 0.8)
+     (test-equal?
+      "Compute correct average degree of islands"
+      (average-degree small-graph) 2.0))
     
     (test-suite
      "BFS tests"

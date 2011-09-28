@@ -8,7 +8,8 @@
 
 (provide
  print-graph-detachment-csv
- print-graph-detachment-table)
+ print-graph-detachment-table
+ graph-stats)
 
 ;------------------------------------------------------------
 ; Definitions
@@ -149,6 +150,20 @@
                    #:key (compose hash-count cdr))
              pos)))
 
+; graph -> number
+(define (graph-edges# g)
+  (quotient (foldl + 0 (map hash-count (hash-values (graph-adjacencies g))))
+            2))
+
+; graph -> real
+(define (average-degree g)
+  (define adjacencies (graph-adjacencies g))
+  (define (degree node)
+    (hash-count (hash-ref adjacencies node (make-hasheq))))
+  (exact->inexact
+   (/ (foldl + 0 (map degree (hash-keys adjacencies)))
+      (graph-nodes# g))))
+
 
 ;------------------------------------------------------------
 ; Computations
@@ -183,6 +198,17 @@
                        (length components)
                        (%-of-nodes/largest-component components nodes#))))))))
 
+; string -> list
+(define (graph-stats name)
+  (let* ([g (load-graph-from-file name)]
+         [nodes# (graph-nodes# g)]
+         [nodes# (graph-edges# g)]
+         [cc# (length (connected-components g))]
+         [avg-degree (average-degree g)])
+    `(("# nodes" ,nodes#)
+      ("# edges" ,nodes#)
+      ("# connected components" ,cc#)
+      ("average degree" ,avg-degree))))
 
 ; string -> void
 (define (print-graph-detachment-table name)
