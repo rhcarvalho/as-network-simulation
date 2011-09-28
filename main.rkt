@@ -1,4 +1,6 @@
+#! /usr/bin/env racket
 #lang racket/base
+
 (require "graph.rkt")
 
 (graph-stats "as_graph.txt")
