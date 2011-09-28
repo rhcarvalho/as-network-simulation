@@ -82,7 +82,7 @@
        Degrees are recomputed@bt{once} per iteration.})
 
 (slide
- #:name "Results"
+ #:name "Results - charts"
  (bt "Results"))
 
 (slide (with-width charts-w as-ncc-10))
@@ -90,6 +90,7 @@
 (slide (with-width charts-w as-plcc-10))
 (slide (with-width charts-w as-plcc-40))
 (slide
+ #:name "Detach few nodes"
  @para{What if we@bt{detach} as few as@bt{10 nodes}?})
 (slide (with-width charts-w as-ncc-10abs))
 (slide (with-width charts-w as-plcc-10abs))
